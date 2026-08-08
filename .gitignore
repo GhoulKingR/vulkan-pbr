@@ -1,0 +1,5 @@
+.cache/
+.clang-format
+.env*
+run.sh
+build/
