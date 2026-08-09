@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -7,12 +8,10 @@
 #include <fstream>
 #include <print>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 #include <format>
+#include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
-#include "glm/matrix.hpp"
-#include "vulkan/vulkan_core.h"
 
 
 #define GLFW_INCLUDE_VULKAN
@@ -1419,11 +1418,7 @@ Engine::Mesh::Mesh(
         descriptorSets
     );
 
-    setTransform(
-        {0.0, 0.0, 0.0},
-        {1.0, 1.0, 1.0},
-        {0.0, 0.0, 0.0}
-    );
+    setTransform(glm::identity<glm::mat4>());
 }
 
 Engine::Mesh::~Mesh() {
@@ -1469,9 +1464,9 @@ void Engine::Mesh::draw() {
     projectionData.proj = glm::perspective(
         glm::radians(45.0f),
         swapchainExtent.width / (float)swapchainExtent.height,
-        0.1f, 10.0f
+        0.1f, 100.0f
     );
-    // projectionData.proj[1][1] *= -1;
+    projectionData.proj[1][1] *= -1;
     
     updateUniformBuffer(
         mappedProjectionUniformBufferMemories,
@@ -1481,29 +1476,31 @@ void Engine::Mesh::draw() {
     );
 }
 
-void Engine::Mesh::setCamera(
-    glm::mat4 view
+void Engine::Mesh::setCamera(const glm::vec3& eye, const glm::vec3& center, const glm::vec3& up) {
+    projectionData.view = glm::lookAt(eye, center, up);
+    projectionData.viewPos = eye;
+}
+
+void Engine::Mesh::setTransform(const glm::mat4& modelMatrix) {
+    projectionData.model = modelMatrix;
+    projectionData.model_normal = modelMatrix;
+}
+
+void Engine::Mesh::setColor(const glm::vec3& color) {
+    fragmentData.albedo = color;
+}
+
+void Engine::Mesh::setLight(const glm::vec3& light) {
+    projectionData.lightPos = light;
+}
+
+void Engine::Mesh::setMaterial(
+        const glm::vec3 &albedo,
+        float metallic, float roughness,
+        float ambientStrength
 ) {
-    projectionData.view = std::move(view);
-}
-
-void Engine::Mesh::setTransform(
-    glm::vec3 pos, glm::vec3 scale, glm::vec3 rotate
-) {
-    auto model = glm::identity<glm::mat4>();
-    model = glm::translate(model, pos);
-    model = glm::scale(model, scale);
-    model = glm::rotate(model, rotate.x, glm::vec3(1.0, 0.0, 0.0));
-    model = glm::rotate(model, rotate.y, glm::vec3(0.0, 1.0, 0.0));
-    model = glm::rotate(model, rotate.z, glm::vec3(0.0, 0.0, 1.0));
-    projectionData.model = model;
-    projectionData.model_normal = glm::transpose(glm::inverse(model));
-}
-
-void Engine::Mesh::setColor(glm::vec3 color) {
-    fragmentData.color = std::move(color);
-}
-
-void Engine::Mesh::setLight(glm::vec3 light) {
-    projectionData.lightPos = std::move(light);
+    fragmentData.albedo = albedo;
+    fragmentData.metallic = metallic;
+    fragmentData.roughness = roughness;
+    fragmentData.ao = ambientStrength;
 }

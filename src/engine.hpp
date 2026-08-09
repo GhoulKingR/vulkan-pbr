@@ -7,7 +7,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
-#include "glm/ext/matrix_float3x3.hpp"
 #include "glm/ext/vector_float3.hpp"
 
 constexpr uint32_t WIDTH = 800;
@@ -38,10 +37,14 @@ private:
         glm::mat4 proj;
 
         glm::vec3 lightPos;
+        glm::vec3 viewPos;
         glm::mat3 model_normal;
     };
     struct UBO {
-        glm::vec3 color{1.0f};
+        glm::vec3 albedo{1.0f};
+        float metallic = 0.8;
+        float roughness = 0.5;
+        float ao = 0.01;
     };
 
 public:
@@ -57,12 +60,12 @@ public:
         VkDeviceMemory indexBufferMemory;
 
         // uniform buffers
-        std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> projectionUniformBuffers;
-        std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> projectionUniformBufferMemories;
-        std::array<void*, MAX_FRAMES_IN_FLIGHT> mappedProjectionUniformBufferMemories;
-        std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> uniformBuffers;
-        std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> uniformBufferMemories;
-        std::array<void*, MAX_FRAMES_IN_FLIGHT> mappedUniformBufferMemories;
+        std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT>          projectionUniformBuffers;
+        std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT>    projectionUniformBufferMemories;
+        std::array<void*, MAX_FRAMES_IN_FLIGHT>             mappedProjectionUniformBufferMemories;
+        std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT>          uniformBuffers;
+        std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT>    uniformBufferMemories;
+        std::array<void*, MAX_FRAMES_IN_FLIGHT>             mappedUniformBufferMemories;
 
         // descriptor set stuffs
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
@@ -75,9 +78,18 @@ public:
         );
         ~Mesh();
         void draw();
-        void setCamera(glm::mat4 view);
-        void setTransform(glm::vec3 pos, glm::vec3 scale, glm::vec3 rotate);
-        void setColor(glm::vec3 color);
-        void setLight(glm::vec3 light);
+        void setCamera(
+            const glm::vec3 &eye,
+            const glm::vec3 &center,
+            const glm::vec3 &up
+        );
+        void setTransform(const glm::mat4 &modelMatrix);
+        void setColor(const glm::vec3 &color);
+        void setLight(const glm::vec3 &light);
+        void setMaterial(
+            const glm::vec3 &albedo,
+            float metallic, float roughness,
+            float ambientStrength
+        );
     };
 };
